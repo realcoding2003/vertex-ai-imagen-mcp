@@ -1,324 +1,222 @@
-# Vertex AI Imagen MCP Server
+# 🎨 Vertex AI Imagen MCP Server
 
-🎨 **High-quality image generation from text prompts using Google Cloud Vertex AI Imagen API**
+**Google Cloud Vertex AI Imagen을 위한 Model Context Protocol (MCP) 서버**
 
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Vertex%20AI-4285F4)](https://cloud.google.com/vertex-ai)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
+이 MCP 서버는 [vertex-ai-imagen](https://github.com/realcoding2003/vertex-ai-imagen) 패키지를 활용하여 Claude Desktop에서 직접 고품질 AI 이미지를 생성할 수 있게 해줍니다.
 
-A Model Context Protocol (MCP) server that integrates Google Cloud's Vertex AI Imagen models for generating stunning images from text descriptions. Works seamlessly with Claude Desktop and supports both interactive CLI and MCP protocol modes.
+## ✨ 주요 기능
 
-## ✨ Features
+- 🎯 **간단한 설정**: `vertex-ai-imagen` 패키지 기반의 간소화된 구조
+- 🚀 **Claude Desktop 통합**: MCP를 통한 원활한 이미지 생성
+- 🎨 **다양한 모델 지원**: Imagen 3.0, imagegeneration@006 등
+- 🔧 **유연한 옵션**: 가로세로 비율, 이미지 수, 안전 설정 등
+- 🔒 **안전한 인증**: Google Cloud 서비스 계정 기반
 
-- 🎨 **Latest AI Models**: Support for Imagen 3.0 and legacy models
-- 🔧 **MCP Integration**: Full Model Context Protocol support for Claude Desktop
-- 🖥️ **Standalone Mode**: Interactive CLI when MCP libraries aren't available  
-- ⚙️ **Rich Options**: Aspect ratios, negative prompts, safety filters, and more
-- 🔒 **Built-in Safety**: Automatic content filtering and watermarking
-- 🚀 **Easy Setup**: Simple environment variable configuration
-- 📚 **Comprehensive Docs**: Detailed guides in English and Korean
+## 🛠️ 설치 및 설정
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.8+
-- Google Cloud account with Vertex AI API enabled
-- Service account with `Vertex AI User` role
-
-### Installation
+### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/vertex-ai-imagen-mcp.git
+git clone https://github.com/your-username/vertex-ai-imagen-mcp.git
 cd vertex-ai-imagen-mcp
+```
+
+### 2. 의존성 설치
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Setup
+### 3. Google Cloud 설정
 
-1. **Create Google Cloud service account** and download JSON key
-2. **Set environment variables**:
-   ```bash
-   export GOOGLE_CLOUD_PROJECT="your-project-id"
-   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
-   export VERTEX_AI_LOCATION="us-central1"
-   ```
-
-### Usage
-
-#### Standalone Mode (Recommended for testing)
+#### 3.1 Google Cloud Project 설정
 ```bash
-python src/imagen_mcp_server.py
+# Google Cloud CLI 설치 후
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+
+# Vertex AI API 활성화
+gcloud services enable aiplatform.googleapis.com
 ```
 
-#### MCP Mode (Claude Desktop integration)
+#### 3.2 서비스 계정 생성
 ```bash
-# Install MCP library
-pip install mcp
+# 서비스 계정 생성
+gcloud iam service-accounts create imagen-mcp \
+  --display-name="Imagen MCP Server"
 
-# Add to Claude Desktop config:
+# 권한 부여
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:imagen-mcp@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+# 키 파일 생성
+gcloud iam service-accounts keys create ~/.config/gcloud/imagen-mcp-key.json \
+  --iam-account=imagen-mcp@YOUR_PROJECT_ID.iam.gserviceaccount.com
+```
+
+### 4. 환경 변수 설정
+
+```bash
+export GOOGLE_CLOUD_PROJECT="YOUR_PROJECT_ID"
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/gcloud/imagen-mcp-key.json"
+```
+
+## 🔧 Claude Desktop 설정
+
+`claude_desktop_config.json` 파일을 수정하여 MCP 서버를 등록하세요:
+
+```json
 {
   "mcpServers": {
     "vertex-ai-imagen": {
       "command": "python",
-      "args": ["/path/to/vertex-ai-imagen-mcp/src/imagen_mcp_server.py"],
+      "args": [
+        "/path/to/vertex-ai-imagen-mcp/mcp_server.py"
+      ],
       "env": {
         "GOOGLE_CLOUD_PROJECT": "your-project-id",
-        "VERTEX_AI_LOCATION": "us-central1",
-        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/service-account-key.json"
+        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/your/service-account-key.json"
       }
     }
   }
 }
 ```
 
-## 🎨 Usage Examples
+### Claude Desktop 설정 파일 위치
 
-### Basic Generation
-```python
-# Simple prompt
-"A serene mountain landscape at sunset"
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-# With options
-{
-  "prompt": "A futuristic cityscape with flying cars",
-  "negative_prompt": "blurry, low quality",
-  "aspect_ratio": "16:9",
-  "image_count": 2
-}
+## 🚀 사용법
+
+### Claude Desktop에서 사용
+
+Claude Desktop을 재시작한 후, 다음과 같이 이미지를 생성할 수 있습니다:
+
+```
+Claude에게: "아름다운 일몰 풍경 이미지를 생성해줘"
 ```
 
-### Advanced Usage
-```python
-# High-quality generation with specific model
-{
-  "prompt": "A detailed oil painting of a cat wearing a crown",
-  "model_version": "imagen-3.0-generate-002",
-  "aspect_ratio": "3:4",
-  "safety_setting": "block_medium_and_above",
-  "seed": 12345
-}
+### 고급 옵션 사용
+
+```
+Claude에게: "고양이가 우주를 여행하는 이미지를 16:9 비율로 2개 생성해줘. 
+모델은 imagen-3.0-fast-generate-001을 사용하고, 
+네거티브 프롬프트로 'blurry, low quality'를 추가해줘"
 ```
 
-## 🛠️ API Reference
+### 이미지 저장 경로 지정
 
-### Supported Tools
+```
+Claude에게: "아름다운 풍경 이미지를 생성하고 /Users/username/Pictures/AI_Images 폴더에 
+'landscape'라는 이름으로 저장해줘"
+```
 
-#### `generate_image`
-Generate images from text prompts.
+### 대화형 모드 (MCP 없이)
 
-**Parameters:**
-- `prompt` (required): Text description of the desired image
-- `negative_prompt`: Content to avoid in the generated image
-- `image_count`: Number of images to generate (1-4)
-- `aspect_ratio`: Image dimensions (`1:1`, `3:4`, `4:3`, `16:9`, `9:16`)
-- `model_version`: AI model to use (see supported models below)
-- `safety_setting`: Content filter level
-- `seed`: Random seed for reproducible results
+```bash
+python mcp_server.py
+```
 
-#### `list_models`
-List all available Imagen models and their capabilities.
+## 🎯 사용 가능한 도구
 
-### Supported Models
+### `generate_image`
+텍스트 프롬프트로부터 이미지 생성
 
-| Model | Description | Speed | Quality |
-|-------|-------------|-------|---------|
-| `imagen-3.0-generate-002` | Latest high-quality model | Medium | Excellent |
-| `imagen-3.0-generate-001` | Previous Imagen 3.0 version | Medium | Excellent |
-| `imagen-3.0-fast-generate-001` | Fast generation model | Fast | Good |
-| `imagegeneration@006` | Stable legacy model | Medium | Good |
-| `imagegeneration@005` | Previous legacy version | Medium | Good |
+**필수 매개변수:**
+- `prompt` (string): 이미지 생성 프롬프트
 
-## 📁 Project Structure
+**선택적 매개변수:**
+- `negative_prompt` (string): 피하고 싶은 내용
+- `count` (integer, 1-4): 생성할 이미지 수
+- `aspect_ratio` (string): 가로세로 비율 ("1:1", "16:9", "9:16", "4:3", "3:4")
+- `model` (string): 사용할 모델
+- `seed` (integer): 재현 가능한 결과를 위한 시드
+- `safety_setting` (string): 안전 필터 수준
+- `save_path` (string): 이미지를 저장할 디렉토리 경로 (지정하지 않으면 Claude에만 표시)
+- `filename_prefix` (string): 저장할 파일명 접두사 (기본값: "generated_image")
+
+### `list_models`
+사용 가능한 Imagen 모델 목록 조회
+
+## 🤖 지원 모델
+
+| 모델명 | 속도 | 품질 | 용도 |
+|--------|------|------|------|
+| `imagegeneration@006` | 🟡 보통 | 🔵 우수 | 일반적인 용도 |
+| `imagen-3.0-generate-001` | 🟡 보통 | 🟣 최고 | 고품질 작업 |
+| `imagen-3.0-generate-002` | 🟡 보통 | 🟣 최고 | 최신 고품질 |
+| `imagen-3.0-fast-generate-001` | ⚡ 빠름 | 🟢 양호 | 빠른 프로토타이핑 |
+
+## 🔍 트러블슈팅
+
+### 일반적인 문제들
+
+#### 1. 인증 오류
+```
+❌ 인증 실패: could not find default credentials
+```
+
+**해결방법:**
+- `GOOGLE_APPLICATION_CREDENTIALS` 환경변수가 올바르게 설정되었는지 확인
+- 서비스 계정 키 파일이 존재하고 읽기 가능한지 확인
+
+#### 2. 권한 오류
+```
+❌ 403 Forbidden: The caller does not have permission
+```
+
+**해결방법:**
+- 서비스 계정에 `roles/aiplatform.user` 역할이 부여되었는지 확인
+- Vertex AI API가 활성화되었는지 확인
+
+#### 3. 프로젝트 ID 오류
+```
+❌ Project ID가 설정되지 않았습니다
+```
+
+**해결방법:**
+- `GOOGLE_CLOUD_PROJECT` 환경변수 설정
+- Claude Desktop 설정에서 프로젝트 ID 확인
+
+## 📁 프로젝트 구조
 
 ```
 vertex-ai-imagen-mcp/
-├── src/
-│   └── imagen_mcp_server.py      # Main MCP server implementation
-├── examples/
-│   ├── basic_usage.py            # Basic usage examples
-│   └── advanced_usage.py         # Advanced features demo
-├── docs/
-│   ├── setup.md                  # Detailed setup guide
-│   ├── api.md                    # API documentation
-│   ├── troubleshooting.md        # Common issues and solutions
-│   ├── ko/                       # Korean documentation
-│   │   ├── README.md
-│   │   ├── setup.md
-│   │   └── api.md
-│   └── images/                   # Documentation images
-├── tests/
-│   ├── test_api.py              # API tests
-│   └── test_mcp.py              # MCP integration tests
-├── requirements.txt              # Python dependencies
-├── requirements-dev.txt          # Development dependencies
-├── setup.py                      # Package configuration
-├── .github/
-│   └── workflows/
-│       ├── test.yml             # Automated testing
-│       └── release.yml          # Release automation
-├── LICENSE                       # MIT License
-└── README.md                     # This file
+├── mcp_server.py              # 메인 MCP 서버
+├── requirements.txt           # Python 의존성
+├── .gitignore                # Git 무시 파일
+├── README.md                 # 이 파일
+├── LICENSE                   # MIT 라이선스
+├── claude_desktop_config.json # Claude Desktop 설정 예시
+└── examples/                 # 사용 예제
+    └── basic_usage.py        # 기본 사용법 예제
 ```
 
-## 🌐 Documentation
+## 🤝 기여하기
 
-- **English**: [Setup Guide](docs/setup.md) | [API Reference](docs/api.md) | [Troubleshooting](docs/troubleshooting.md)
-- **한국어**: [설정 가이드](docs/ko/setup.md) | [API 참조](docs/ko/api.md) | [문제 해결](docs/ko/troubleshooting.md)
+1. 저장소를 포크합니다
+2. 기능 브랜치를 생성합니다 (`git checkout -b feature/amazing-feature`)
+3. 변경사항을 커밋합니다 (`git commit -m 'Add amazing feature'`)
+4. 브랜치에 푸시합니다 (`git push origin feature/amazing-feature`)
+5. Pull Request를 생성합니다
 
-## 🧪 Development
+## 📄 라이선스
 
-### Local Development Setup
+이 프로젝트는 MIT 라이선스 하에 있습니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
-```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/vertex-ai-imagen-mcp.git
-cd vertex-ai-imagen-mcp
+## 🔗 관련 링크
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+- [vertex-ai-imagen 패키지](https://github.com/realcoding2003/vertex-ai-imagen) - 핵심 AI 이미지 생성 라이브러리
+- [Google Cloud Vertex AI](https://cloud.google.com/vertex-ai) - 공식 Vertex AI 문서
+- [Model Context Protocol](https://modelcontextprotocol.io/) - MCP 공식 사이트
+- [Claude Desktop](https://claude.ai/desktop) - Claude Desktop 애플리케이션
 
-# Install development dependencies
-pip install -r requirements-dev.txt
+## ❓ 질문 및 지원
 
-# Run tests
-python -m pytest tests/
-
-# Run linting
-black src/ tests/
-flake8 src/ tests/
-```
-
-### Running Examples
-
-```bash
-# Basic usage
-python examples/basic_usage.py
-
-# Advanced features
-python examples/advanced_usage.py
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Process
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass (`python -m pytest`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-### Code Style
-
-- Use [Black](https://black.readthedocs.io/) for code formatting
-- Follow [PEP 8](https://pep8.org/) style guidelines
-- Add type hints where appropriate
-- Write descriptive commit messages
-
-## 📋 Requirements
-
-### System Requirements
-- Python 3.8 or higher
-- Internet connection for API calls
-- Google Cloud account with billing enabled
-
-### Python Dependencies
-- `requests>=2.31.0` - HTTP client for API calls
-- `google-auth>=2.23.0` - Google Cloud authentication
-- `google-auth-oauthlib>=1.1.0` - OAuth2 support
-- `google-auth-httplib2>=0.1.1` - HTTP transport
-- `mcp>=0.1.0` - Model Context Protocol (optional)
-
-### Google Cloud Requirements
-- Project with Vertex AI API enabled
-- Service account with `Vertex AI User` role
-- Billing account linked to the project
-
-## 💰 Pricing
-
-This tool uses Google Cloud Vertex AI Imagen API, which has usage-based pricing:
-
-- **Pay per image generated**
-- **Pricing varies by model and resolution**
-- **Free tier available for new users**
-
-For detailed pricing information, visit the [Google Cloud Pricing page](https://cloud.google.com/vertex-ai/pricing).
-
-### Cost Optimization Tips
-
-- Use `imagen-3.0-fast-generate-001` for faster, cheaper generation
-- Generate multiple images in a single request when possible
-- Set up billing alerts to monitor usage
-- Use lower resolution for prototyping
-
-## 🔒 Security & Privacy
-
-- **Service Account Keys**: Store securely and rotate regularly
-- **Content Filtering**: Built-in safety filters prevent harmful content
-- **Data Privacy**: Images are not stored by Google after generation
-- **Network Security**: All API calls use HTTPS/TLS encryption
-
-## ❓ Troubleshooting
-
-### Common Issues
-
-**Authentication Error (403 Forbidden)**
-```bash
-# Solution: Check service account permissions
-# Ensure "Vertex AI User" role is assigned
-```
-
-**API Not Enabled Error**
-```bash
-# Solution: Enable Vertex AI API
-gcloud services enable aiplatform.googleapis.com
-```
-
-**Project Not Found**
-```bash
-# Solution: Verify environment variables
-echo $GOOGLE_CLOUD_PROJECT
-echo $GOOGLE_APPLICATION_CREDENTIALS
-```
-
-For more detailed troubleshooting, see our [Troubleshooting Guide](docs/troubleshooting.md).
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Google Cloud Vertex AI** - For providing powerful AI image generation capabilities
-- **Model Context Protocol** - For enabling seamless AI tool integration
-- **Anthropic Claude** - For inspiring better human-AI collaboration
-- **Open Source Community** - For making this project possible
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/vertex-ai-imagen-mcp/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/vertex-ai-imagen-mcp/discussions)
-- **Documentation**: [Full Documentation](docs/)
-
-## 🌟 Show Your Support
-
-If this project helps you, please consider:
-- ⭐ Starring the repository
-- 🐛 Reporting bugs
-- 💡 Suggesting new features
-- 📝 Contributing to documentation
-- 🔗 Sharing with others
+문제가 발생하거나 질문이 있으시면 [GitHub Issues](https://github.com/your-username/vertex-ai-imagen-mcp/issues)에 등록해 주세요.
 
 ---
 
-**Made with ❤️ by the community for the community**
-
-*Happy image generating! 🎨*
+**Made with ❤️ by [Kevin Park](https://github.com/your-username)**
