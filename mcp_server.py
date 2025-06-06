@@ -109,14 +109,36 @@ async def handle_generate_image(params: Dict[str, Any]) -> Dict[str, Any]:
         save_path = params.get("save_path")
         if save_path:
             os.makedirs(save_path, exist_ok=True)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename_prefix = params.get("filename_prefix", "generated_image")
             
-            for i, image in enumerate(images):
-                filename = f"{filename_prefix}_{timestamp}_{i+1}.png"
-                filepath = os.path.join(save_path, filename)
-                image.save(filepath)
-                saved_files.append(filepath)
+            # filename이 지정된 경우 정확한 파일명 사용, 아니면 타임스탬프 추가
+            custom_filename = params.get("filename")
+            if custom_filename:
+                # 확장자가 없으면 .png 추가
+                if not custom_filename.endswith(('.png', '.jpg', '.jpeg')):
+                    custom_filename += '.png'
+                    
+                for i, image in enumerate(images):
+                    if len(images) == 1:
+                        # 이미지가 1개면 그대로 사용
+                        filename = custom_filename
+                    else:
+                        # 여러 개면 숫자 추가
+                        name, ext = os.path.splitext(custom_filename)
+                        filename = f"{name}_{i+1}{ext}"
+                    
+                    filepath = os.path.join(save_path, filename)
+                    image.save(filepath)
+                    saved_files.append(filepath)
+            else:
+                # 기존 방식: 타임스탬프 사용
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename_prefix = params.get("filename_prefix", "generated_image")
+                
+                for i, image in enumerate(images):
+                    filename = f"{filename_prefix}_{timestamp}_{i+1}.png"
+                    filepath = os.path.join(save_path, filename)
+                    image.save(filepath)
+                    saved_files.append(filepath)
         
         # 결과 구성
         result_text = f"✅ {len(images)}개 이미지 생성 완료!\n\n"
@@ -246,10 +268,14 @@ async def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
                                         "type": "string",
                                         "description": "이미지를 저장할 경로 (선택사항)"
                                     },
+                                    "filename": {
+                                        "type": "string",
+                                        "description": "정확한 파일명 (확장자 포함, 선택사항). 지정하면 타임스탬프 없이 이 이름으로 저장됩니다."
+                                    },
                                     "filename_prefix": {
                                         "type": "string",
                                         "default": "generated_image",
-                                        "description": "저장할 파일명 접두사"
+                                        "description": "파일명 접두사 (filename이 없을 때만 사용)"
                                     }
                                 },
                                 "required": ["prompt"]
